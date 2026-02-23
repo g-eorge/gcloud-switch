@@ -1,0 +1,19 @@
+#compdef gcloud-switch gcloud-setup-adc
+
+# Tab completion for gcloud-switch plugin
+
+_gcloud_switch_configs() {
+    local configs
+    configs=(${(f)"$(find ~/.config/gcloud/configurations -name 'config_*' 2>/dev/null | xargs -I{} basename {} | sed 's/^config_//')"})
+    _describe 'gcloud configurations' configs
+}
+
+_gcloud-switch() {
+    _arguments '1: :_gcloud_switch_configs'
+}
+
+_gcloud-setup-adc() {
+    _arguments '1: :_gcloud_switch_configs'
+}
+
+_gcloud-switch "$@"

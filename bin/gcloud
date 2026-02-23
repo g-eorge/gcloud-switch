@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# Gcloud wrapper script for per-terminal configuration
+# This script intercepts gcloud calls and injects the right configuration
+
+# Function to find parent shell's session variables
+find_session_config() {
+    # Look through environment for session-based variables
+    local config_var adc_var
+    for var in $(env | grep '^GCLOUD_CONFIG_gcloud_' | cut -d= -f1); do
+        local session_id=${var#GCLOUD_CONFIG_}
+        config_var="GCLOUD_CONFIG_$session_id"
+        adc_var="GCLOUD_ADC_$session_id"
+
+        if [[ -n "${!config_var}" && -n "${!adc_var}" ]]; then
+            echo "config=${!config_var}"
+            echo "adc=${!adc_var}"
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Try to find session configuration
+if session_config=$(find_session_config); then
+    # Parse the configuration
+    eval "$session_config"
+    CLOUDSDK_ACTIVE_CONFIG_NAME="$config" GOOGLE_APPLICATION_CREDENTIALS="$adc" /usr/bin/gcloud "$@"
+else
+    # Use default gcloud behavior
+    /usr/bin/gcloud "$@"
+fi

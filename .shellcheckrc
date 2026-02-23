@@ -1,0 +1,10 @@
+# ShellCheck configuration for gcloud-switch
+
+# Disable warnings for sourced files (dynamic paths)
+disable=SC1090,SC1091
+
+# Set shell type
+shell=bash
+
+# Enable all optional checks
+enable=all
