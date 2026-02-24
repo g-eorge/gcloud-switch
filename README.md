@@ -91,6 +91,29 @@ gcloud-setup-adc <config-name>
 
 This creates a configuration-specific ADC file at `~/.config/gcloud/adc-<config-name>.json`.
 
+### Extra API scopes
+
+By default, ADC credentials use the `cloud-platform` scope. If you need access to additional Google APIs (e.g., YouTube, Google Drive), pass extra scopes as positional arguments after the config name:
+
+```bash
+# Default cloud-platform scope only
+gcloud-setup-adc myconfig
+
+# Add YouTube read-only access
+gcloud-setup-adc myconfig youtube.readonly
+
+# Add multiple scopes
+gcloud-setup-adc myconfig drive.readonly spreadsheets pubsub
+```
+
+Short names like `youtube.readonly` are expanded automatically. You can also pass full URLs:
+
+```bash
+gcloud-setup-adc myconfig https://www.googleapis.com/auth/calendar.readonly
+```
+
+Run `gcloud-setup-adc` with no arguments to see all available short scope names.
+
 ### Switching configurations
 
 ```bash

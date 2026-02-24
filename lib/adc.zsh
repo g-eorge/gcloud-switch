@@ -1,14 +1,72 @@
 # ADC setup functionality for gcloud-switch plugin
 
+# Map of short scope names to full OAuth2 scope URLs
+typeset -gA _GCLOUD_SCOPE_MAP
+_GCLOUD_SCOPE_MAP=(
+    cloud-platform      "https://www.googleapis.com/auth/cloud-platform"
+    bigquery            "https://www.googleapis.com/auth/bigquery"
+    bigquery.readonly   "https://www.googleapis.com/auth/bigquery.readonly"
+    compute             "https://www.googleapis.com/auth/compute"
+    compute.readonly    "https://www.googleapis.com/auth/compute.readonly"
+    datastore           "https://www.googleapis.com/auth/datastore"
+    devstorage.full_control "https://www.googleapis.com/auth/devstorage.full_control"
+    devstorage.read_only "https://www.googleapis.com/auth/devstorage.read_only"
+    devstorage.read_write "https://www.googleapis.com/auth/devstorage.read_write"
+    drive               "https://www.googleapis.com/auth/drive"
+    drive.readonly      "https://www.googleapis.com/auth/drive.readonly"
+    gmail.readonly      "https://www.googleapis.com/auth/gmail.readonly"
+    gmail.send          "https://www.googleapis.com/auth/gmail.send"
+    monitoring          "https://www.googleapis.com/auth/monitoring"
+    monitoring.read     "https://www.googleapis.com/auth/monitoring.read"
+    pubsub              "https://www.googleapis.com/auth/pubsub"
+    spreadsheets        "https://www.googleapis.com/auth/spreadsheets"
+    spreadsheets.readonly "https://www.googleapis.com/auth/spreadsheets.readonly"
+    youtube.readonly    "https://www.googleapis.com/auth/youtube.readonly"
+    youtube.upload      "https://www.googleapis.com/auth/youtube.upload"
+)
+
+# Resolve a scope argument to a full URL.
+# 1. If it starts with https:// — use as-is
+# 2. If it's a key in _GCLOUD_SCOPE_MAP — expand
+# 3. Otherwise — auto-prefix with https://www.googleapis.com/auth/
+_gcloud_resolve_scope() {
+    local input=$1
+    if [[ "$input" == https://* ]]; then
+        echo "$input"
+    elif (( ${+_GCLOUD_SCOPE_MAP[$input]} )); then
+        echo "${_GCLOUD_SCOPE_MAP[$input]}"
+    else
+        echo "https://www.googleapis.com/auth/$input"
+    fi
+}
+
 gcloud-setup-adc() {
     local config_name=$1
 
     if [[ -z "$config_name" ]]; then
-        echo "Usage: gcloud-setup-adc <config-name>"
+        echo "Usage: gcloud-setup-adc <config-name> [scope ...]"
+        echo ""
+        echo "Extra scopes are added alongside the default cloud-platform scope."
+        echo ""
+        echo "Examples:"
+        echo "  gcloud-setup-adc myconfig                        # cloud-platform only"
+        echo "  gcloud-setup-adc myconfig youtube.readonly        # + YouTube read-only"
+        echo "  gcloud-setup-adc myconfig drive.readonly pubsub   # + Drive + Pub/Sub"
+        echo ""
+        echo "Available short scope names:"
+        for key in ${(ko)_GCLOUD_SCOPE_MAP}; do
+            printf "  %-28s %s\n" "$key" "${_GCLOUD_SCOPE_MAP[$key]}"
+        done
+        echo ""
+        echo "Full URLs (https://...) and unlisted names are also accepted."
+        echo ""
         echo "Available configurations:"
         /usr/bin/gcloud config configurations list --format="table(name,properties.core.account,properties.core.project)"
         return 1
     fi
+
+    shift
+    local extra_scopes=("$@")
 
     echo "Setting up ADC for configuration: $config_name (bypassing session wrapper)"
 
@@ -31,9 +89,29 @@ gcloud-setup-adc() {
         return 1
     fi
 
+    # Build scope list when extra scopes are provided
+    local scope_args=()
+    if (( ${#extra_scopes[@]} > 0 )); then
+        # Start with cloud-platform as the base scope
+        local -aU resolved_scopes  # -U for unique elements
+        resolved_scopes=("${_GCLOUD_SCOPE_MAP[cloud-platform]}")
+
+        for s in "${extra_scopes[@]}"; do
+            resolved_scopes+=("$(_gcloud_resolve_scope "$s")")
+        done
+
+        echo "Scopes:"
+        for s in "${resolved_scopes[@]}"; do
+            echo "  $s"
+        done
+
+        # Join with commas for the --scopes flag
+        scope_args=("--scopes=${(j:,:)resolved_scopes}")
+    fi
+
     # Setup ADC using environment variable instead of global configuration change
     echo "Setting up Application Default Credentials for $account..."
-    if CLOUDSDK_ACTIVE_CONFIG_NAME="$config_name" /usr/bin/gcloud auth application-default login --project="$project_id"; then
+    if CLOUDSDK_ACTIVE_CONFIG_NAME="$config_name" /usr/bin/gcloud auth application-default login --project="$project_id" "${scope_args[@]}"; then
         # Copy to config-specific location
         cp ~/.config/gcloud/application_default_credentials.json ~/.config/gcloud/adc-$config_name.json
         echo "✅ Created ADC file: ~/.config/gcloud/adc-$config_name.json"

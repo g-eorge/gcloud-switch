@@ -8,12 +8,38 @@ _gcloud_switch_configs() {
     _describe 'gcloud configurations' configs
 }
 
+_gcloud_scope_names() {
+    local -a scopes
+    scopes=(
+        'bigquery:BigQuery'
+        'bigquery.readonly:BigQuery read-only'
+        'compute:Compute Engine'
+        'compute.readonly:Compute Engine read-only'
+        'datastore:Cloud Datastore'
+        'devstorage.full_control:Cloud Storage full control'
+        'devstorage.read_only:Cloud Storage read-only'
+        'devstorage.read_write:Cloud Storage read/write'
+        'drive:Google Drive'
+        'drive.readonly:Google Drive read-only'
+        'gmail.readonly:Gmail read-only'
+        'gmail.send:Gmail send'
+        'monitoring:Cloud Monitoring'
+        'monitoring.read:Cloud Monitoring read-only'
+        'pubsub:Pub/Sub'
+        'spreadsheets:Google Sheets'
+        'spreadsheets.readonly:Google Sheets read-only'
+        'youtube.readonly:YouTube read-only'
+        'youtube.upload:YouTube upload'
+    )
+    _describe 'scope' scopes
+}
+
 _gcloud-switch() {
     _arguments '1: :_gcloud_switch_configs'
 }
 
 _gcloud-setup-adc() {
-    _arguments '1: :_gcloud_switch_configs'
+    _arguments '1: :_gcloud_switch_configs' '*: :_gcloud_scope_names'
 }
 
 _gcloud-switch "$@"
