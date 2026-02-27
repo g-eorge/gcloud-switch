@@ -39,7 +39,7 @@ _gcloud-switch() {
 }
 
 _gcloud-setup-adc() {
-    _arguments '1: :_gcloud_switch_configs' '*: :_gcloud_scope_names'
+    _arguments '--no-browser[Use remote login flow for headless sessions]' '1: :_gcloud_switch_configs' '*: :_gcloud_scope_names'
 }
 
 _gcloud-switch "$@"

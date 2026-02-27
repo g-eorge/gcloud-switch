@@ -83,13 +83,19 @@ Run installation script:
 
 ### First-time setup for a configuration
 
-Before switching, set up Application Default Credentials (ADC) for each configuration. This requires browser authentication (one-time only):
+Before switching, set up Application Default Credentials (ADC) for each configuration. ADC credentials expire periodically, so you'll need to re-run this when they do:
 
 ```bash
 gcloud-setup-adc <config-name>
 ```
 
 This creates a configuration-specific ADC file at `~/.config/gcloud/adc-<config-name>.json`.
+
+In headless environments (SSH sessions, remote servers, containers), use `--no-browser` to authenticate via a remote login flow:
+
+```bash
+gcloud-setup-adc --no-browser <config-name>
+```
 
 ### Extra API scopes
 

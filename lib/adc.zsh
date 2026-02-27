@@ -41,17 +41,32 @@ _gcloud_resolve_scope() {
 }
 
 gcloud-setup-adc() {
-    local config_name=$1
+    # Pre-scan arguments: extract --no-browser flag, collect positional args
+    local no_browser=false
+    local -a positional=()
+    for arg in "$@"; do
+        if [[ "$arg" == "--no-browser" ]]; then
+            no_browser=true
+        else
+            positional+=("$arg")
+        fi
+    done
+
+    local config_name=${positional[1]}
 
     if [[ -z "$config_name" ]]; then
-        echo "Usage: gcloud-setup-adc <config-name> [scope ...]"
+        echo "Usage: gcloud-setup-adc [--no-browser] <config-name> [scope ...]"
         echo ""
         echo "Extra scopes are added alongside the default cloud-platform scope."
+        echo ""
+        echo "Options:"
+        echo "  --no-browser    Use remote login flow (for headless/SSH sessions)"
         echo ""
         echo "Examples:"
         echo "  gcloud-setup-adc myconfig                        # cloud-platform only"
         echo "  gcloud-setup-adc myconfig youtube.readonly        # + YouTube read-only"
         echo "  gcloud-setup-adc myconfig drive.readonly pubsub   # + Drive + Pub/Sub"
+        echo "  gcloud-setup-adc --no-browser myconfig            # headless login"
         echo ""
         echo "Available short scope names:"
         for key in ${(ko)_GCLOUD_SCOPE_MAP}; do
@@ -65,8 +80,7 @@ gcloud-setup-adc() {
         return 1
     fi
 
-    shift
-    local extra_scopes=("$@")
+    local extra_scopes=("${positional[@]:1}")
 
     echo "Setting up ADC for configuration: $config_name (bypassing session wrapper)"
 
@@ -111,7 +125,12 @@ gcloud-setup-adc() {
 
     # Setup ADC using environment variable instead of global configuration change
     echo "Setting up Application Default Credentials for $account..."
-    if CLOUDSDK_ACTIVE_CONFIG_NAME="$config_name" /usr/bin/gcloud auth application-default login --project="$project_id" "${scope_args[@]}"; then
+    local -a browser_args=()
+    if [[ "$no_browser" == true ]]; then
+        browser_args+=("--no-browser")
+    fi
+
+    if CLOUDSDK_ACTIVE_CONFIG_NAME="$config_name" /usr/bin/gcloud auth application-default login --project="$project_id" "${browser_args[@]}" "${scope_args[@]}"; then
         # Copy to config-specific location
         cp ~/.config/gcloud/application_default_credentials.json ~/.config/gcloud/adc-$config_name.json
         echo "✅ Created ADC file: ~/.config/gcloud/adc-$config_name.json"

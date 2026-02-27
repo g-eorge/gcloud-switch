@@ -20,9 +20,10 @@ test:
 	fi
 
 lint:
-	@echo "Running ShellCheck..."
-	@shellcheck bin/gcloud bin/install.sh || true
-	@shellcheck -s bash lib/*.zsh || true
+	@echo "Running ShellCheck on bash scripts..."
+	@shellcheck --severity=warning bin/gcloud bin/install.sh
+	@echo "Running zsh syntax check..."
+	@for f in lib/*.zsh; do zsh -n "$$f" || exit 1; done
 
 check: lint test
 	@echo "All checks complete"

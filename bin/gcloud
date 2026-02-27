@@ -25,6 +25,7 @@ find_session_config() {
 if session_config=$(find_session_config); then
     # Parse the configuration
     eval "$session_config"
+    # shellcheck disable=SC2154 # config and adc are set by eval above
     CLOUDSDK_ACTIVE_CONFIG_NAME="$config" GOOGLE_APPLICATION_CREDENTIALS="$adc" /usr/bin/gcloud "$@"
 else
     # Use default gcloud behavior
