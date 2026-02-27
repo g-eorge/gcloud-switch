@@ -91,7 +91,13 @@ gcloud-setup-adc <config-name>
 
 This creates a configuration-specific ADC file at `~/.config/gcloud/adc-<config-name>.json`.
 
-In headless environments (SSH sessions, remote servers, containers), use `--no-browser` to authenticate via a remote login flow:
+In headless environments (SSH sessions, remote servers, containers), use `--no-launch-browser` to print a URL you can open in any browser (phone, laptop, etc.), authenticate, and paste back the auth code:
+
+```bash
+gcloud-setup-adc --no-launch-browser <config-name>
+```
+
+Alternatively, if you have gcloud installed on a second machine, you can use `--no-browser` for gcloud's remote-bootstrap flow:
 
 ```bash
 gcloud-setup-adc --no-browser <config-name>

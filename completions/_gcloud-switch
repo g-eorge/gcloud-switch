@@ -39,7 +39,10 @@ _gcloud-switch() {
 }
 
 _gcloud-setup-adc() {
-    _arguments '--no-browser[Use remote login flow for headless sessions]' '1: :_gcloud_switch_configs' '*: :_gcloud_scope_names'
+    _arguments \
+        '(--no-browser --no-launch-browser)--no-launch-browser[Print a URL to open in any browser, then paste back the auth code]' \
+        '(--no-browser --no-launch-browser)--no-browser[Use remote-bootstrap flow (requires gcloud on a second machine)]' \
+        '1: :_gcloud_switch_configs' '*: :_gcloud_scope_names'
 }
 
 _gcloud-switch "$@"

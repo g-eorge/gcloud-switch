@@ -41,12 +41,22 @@ _gcloud_resolve_scope() {
 }
 
 gcloud-setup-adc() {
-    # Pre-scan arguments: extract --no-browser flag, collect positional args
-    local no_browser=false
+    # Pre-scan arguments: extract browser flags, collect positional args
+    local browser_flag=""
     local -a positional=()
     for arg in "$@"; do
         if [[ "$arg" == "--no-browser" ]]; then
-            no_browser=true
+            if [[ -n "$browser_flag" ]]; then
+                echo "Error: --no-browser and --no-launch-browser are mutually exclusive"
+                return 1
+            fi
+            browser_flag="--no-browser"
+        elif [[ "$arg" == "--no-launch-browser" ]]; then
+            if [[ -n "$browser_flag" ]]; then
+                echo "Error: --no-browser and --no-launch-browser are mutually exclusive"
+                return 1
+            fi
+            browser_flag="--no-launch-browser"
         else
             positional+=("$arg")
         fi
@@ -55,18 +65,20 @@ gcloud-setup-adc() {
     local config_name=${positional[1]}
 
     if [[ -z "$config_name" ]]; then
-        echo "Usage: gcloud-setup-adc [--no-browser] <config-name> [scope ...]"
+        echo "Usage: gcloud-setup-adc [--no-launch-browser|--no-browser] <config-name> [scope ...]"
         echo ""
         echo "Extra scopes are added alongside the default cloud-platform scope."
         echo ""
         echo "Options:"
-        echo "  --no-browser    Use remote login flow (for headless/SSH sessions)"
+        echo "  --no-launch-browser  Print a URL to open in any browser, then paste back the auth code"
+        echo "  --no-browser         Use remote-bootstrap flow (requires gcloud on a second machine)"
         echo ""
         echo "Examples:"
-        echo "  gcloud-setup-adc myconfig                        # cloud-platform only"
-        echo "  gcloud-setup-adc myconfig youtube.readonly        # + YouTube read-only"
-        echo "  gcloud-setup-adc myconfig drive.readonly pubsub   # + Drive + Pub/Sub"
-        echo "  gcloud-setup-adc --no-browser myconfig            # headless login"
+        echo "  gcloud-setup-adc myconfig                              # cloud-platform only"
+        echo "  gcloud-setup-adc myconfig youtube.readonly              # + YouTube read-only"
+        echo "  gcloud-setup-adc myconfig drive.readonly pubsub         # + Drive + Pub/Sub"
+        echo "  gcloud-setup-adc --no-launch-browser myconfig           # headless login (recommended)"
+        echo "  gcloud-setup-adc --no-browser myconfig                  # remote-bootstrap login"
         echo ""
         echo "Available short scope names:"
         for key in ${(ko)_GCLOUD_SCOPE_MAP}; do
@@ -126,8 +138,8 @@ gcloud-setup-adc() {
     # Setup ADC using environment variable instead of global configuration change
     echo "Setting up Application Default Credentials for $account..."
     local -a browser_args=()
-    if [[ "$no_browser" == true ]]; then
-        browser_args+=("--no-browser")
+    if [[ -n "$browser_flag" ]]; then
+        browser_args+=("$browser_flag")
     fi
 
     if CLOUDSDK_ACTIVE_CONFIG_NAME="$config_name" /usr/bin/gcloud auth application-default login --project="$project_id" "${browser_args[@]}" "${scope_args[@]}"; then
