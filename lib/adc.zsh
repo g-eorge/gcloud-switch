@@ -142,7 +142,7 @@ gcloud-setup-adc() {
         browser_args+=("$browser_flag")
     fi
 
-    if CLOUDSDK_ACTIVE_CONFIG_NAME="$config_name" /usr/bin/gcloud auth application-default login --project="$project_id" "${browser_args[@]}" "${scope_args[@]}"; then
+    if CLOUDSDK_ACTIVE_CONFIG_NAME="$config_name" OAUTHLIB_INSECURE_TRANSPORT=1 /usr/bin/gcloud auth application-default login --project="$project_id" "${browser_args[@]}" "${scope_args[@]}"; then
         # Copy to config-specific location
         cp ~/.config/gcloud/application_default_credentials.json ~/.config/gcloud/adc-$config_name.json
         echo "✅ Created ADC file: ~/.config/gcloud/adc-$config_name.json"
